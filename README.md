@@ -9,7 +9,9 @@ MongoDB
 Contents
 * [2.4 檢查與啟動MongoDB服務](#contents)
 * [3.3 基本操作](#3_3)
+* [5,6 更種操作，包含批次操作](#ch6)
 * [7. 索引與效能分析](#ch7)
+* [8. 聚合與管線](#ch8)
 
 
 ### 2.4 檢查與啟動MongoDB服務
@@ -57,6 +59,7 @@ db.students.drop() #刪除以students的集合
 |mongodump|輸出二進制的資料庫內容檔案，以進行資料備份|
 |mongorestore|讀取二進制的資料庫內容檔案，進行資料還原|
 
+<span id="ch6"></span>
 ### 5.1, 6.1 資料庫基本操作
 #### 查詢運算子
 ◎關聯式資料庫
@@ -107,7 +110,47 @@ WHERE 借閱人="阿能"
 ```json
 db.library.remove({借閱人:"阿能"})
 ```
-
+#### 6.5 批次操作(Bulk Write Operation)
+將資料操作用一個數組包含起來一次執行：
+```shell
+db.collection.bulkWrite(
+    [<operation 1>, <operation2>, ...],
+    {
+        writeConcern : <document>,
+        ordered : <boolean>
+    }
+)
+```
+|參數|型態|描述|
+|---|---|---|
+[operations](https://docs.mongodb.com/manual/core/bulk-write-operations/#bulkwrite-methods)|數組array|一組批次操作，常見的操作有insertOne, updateOne, ...。
+[writeConcern](https://docs.mongodb.com/manual/reference/write-concern/)|文件document|(可選的)操作要求回應設定{w:<value>, j:<boolean>, wtimeout:<number>}。預設w:1為操作確實完成後回應，w:0不要求操作確實完成，除非是連線有問題才會出錯。j:true，資料要確實寫入到磁碟內，但在沒有開啟Journal的MongoDB伺服器會出錯。wtimeout如果操作花費的時間超過指定的數值就會出錯，不論操作是否成功的執行，單位為millisecond，且只有在w >= 1時會作用。
+ordered|布林值boolean|批次操作是否需要依序執行，預設值為true。
+```json
+//範例資料在https://github.com/taipeitechmmslab/MMSLAB-MongoDB/tree/master/Ch-6
+db.getCollection('drink').bulkWrite(
+    [
+        {
+            updateOne:{
+                filter:{_id:"001"},
+                update:{$inc:{sold:20},$push:{log:{time:Date.now(),size:"M"}}}
+            }
+        },
+        {
+            updateOne:{
+                filter:{_id:"002"},
+                update:{$inc:{sold:40},$push:{log:{time:Date.now(),size:"M"}}}
+            }
+        },
+        {
+            updateOne:{
+                filter:{_id:"003"},
+                update:{$inc:{sold:65},$push:{log:{time:Date.now(),size:"L"}}}
+            }
+        },
+    ]
+)
+```
 <span id="ch7"></span>
 ### 7. 索引與效能分析
 
@@ -157,3 +200,28 @@ db.getProfilingStatus() //可查詢設定狀態
 
 ■ 查詢結果
 在collections目錄上按右鍵選擇`Refresh`來更新集合；當出現`system.profile`集合，代表db.setProfilingLevel(2)操作成功。
+
+<span id="ch8"></span>
+### 8. 聚合(Aggregate)與管線(Pipeline)
+聚合可使我們能夠針對資料作一系列的pipeline，類似流程的概念，對資料做有序性的處理；其中pipeline可以對資料進行後製處理，例如資料加總、平均等。在聚合內的參數由一數組包含pipeline與參數來控制，更多[聚合操作參考](https://docs.mongodb.com/manual/aggregation/)。而Map-Reduce是支援JavaScript的操作。
+```shell
+db.collection.aggregate(
+    [<pipeline 1>, <pipeline 2>, ...] #pipeline數組
+    {<options>}
+)
+'''
+可使用的<pipeline>包含$match, $group, $project, $limit, $skip, $geoNear, $lookup等。
+'''
+
+db.getCollection('customers').aggregate([
+    {$match:{city:"台北市"}}, #對集合內的資料進行篩選處理
+    {$group:{_id:"$district",ages:{$push:"$age"}}}, #看後面註解
+    {$project:{_id:1,value:{$sum:"$ages"}}}, #針對欄位進行計算後，重新輸出(project)到某個欄位
+    {$out:"taipei_city"} #輸出到taipei_city集合
+])
+```
+在\$group pipeline中，用「_id」欄位作為分組規則，判斷資料的district欄位值是否要被分在同一組，分在同一組的資料的age值利用$push儲存到ages陣列的最後一個。
+
+如果要使用當前被處理資料的欄位數值，可以透過加上「$」符號並使用雙引號「"」，進行遍數變換。[p.215]
+
+如果在\$group將「_id」欄位設為固定值(例如：1)，則所有經過處理的資料皆視為同一組。使用"$$ROOT"為[變數](https://docs.mongodb.com/manual/reference/aggregation-variables/)，為輸入在進入pipeline前的原始資料。
