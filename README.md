@@ -12,6 +12,7 @@ Contents
 * [5,6 更種操作，包含批次操作](#ch6)
 * [7. 索引與效能分析](#ch7)
 * [8. 聚合與管線](#ch8)
+* [9. 備份複製](#ch9)
 
 
 ### 2.4 檢查與啟動MongoDB服務
@@ -225,3 +226,57 @@ db.getCollection('customers').aggregate([
 如果要使用當前被處理資料的欄位數值，可以透過加上「$」符號並使用雙引號「"」，進行遍數變換。[p.215]
 
 如果在\$group將「_id」欄位設為固定值(例如：1)，則所有經過處理的資料皆視為同一組。使用"$$ROOT"為[變數](https://docs.mongodb.com/manual/reference/aggregation-variables/)，為輸入在進入pipeline前的原始資料。
+
+<span id="ch9"></span>
+### 9. 備份複製(Replication)
+透過設定`mongod`的運行組態`--replSet "分組名稱"`，來決定是否啟動Replica Set的功能。例如：我們透過命令提示字元輸入mongod --replSet "rs0"，啟動資料庫的Replica Set功能，並設定此資料庫的複製分組為rs0。
+```shell
+# 這是一個cmd視窗
+mkdir "d:\local_replSet\db{1-3}"
+mongod --replSet rs0 --port 27017 --dbpath "D:\local_rep\db1"
+# 第二個cmd視窗
+mongod --replSet rs0 --port 27018 --dbpath "D:\local_rep\db2"
+# 第三個cmd視窗
+mongod --replSet rs0 --port 27019 --dbpath "D:\local_rep\db3"
+```
+注意MongoDB預設的連接埠是27017，可在`mongod.conf`組態檔觀察各設定參數[p.34, p.232]，[組態檔設定參考](https://docs.mongodb.com/manual/reference/configuration-options/)。
+
+```shell
+# 開啟一個全新的cmd，連接其中一個mongod資料庫
+mongo #使用mongo管理工具連接到port為27017的mongod
+# rs.initiate() 或是
+rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})
+#查詢目前的MongoDB Replica Set狀態與設定
+rs.status()
+#---新增Replica Set成員
+rs.add({_id:1,host:"localhost:27018"})
+rs.add({_id:2,host:"localhost:27019"})
+rs.status() #觀察連接狀況
+
+rs.remove("localhost:27018") #移除成員
+"""
+延伸使用，透過mongo指令連線，同時連線三個Replica Set
+資料庫，需再增加連線參數
+也能在電腦新增三個mongod.conf組態檔，加入Replica Set
+資料庫，並透過服務啟動MongoDB，取代cmd的啟動方式
+"""
+mongo --host rs0/localhost:27017,localhost:27018,localhost:27019
+#上述命令即使沒有輸入全部成員的連線資訊，mongo工具偵測到其他成員時，會自動新增連線資訊
+#---監測資料
+mongostat --host rs0/localhost:27017,localhost:27018,localhost:27019
+```
+注意所有的設定操作只能在primary成員執行，如果發現目前的指令無法執行，則需要連線到primary的資料庫；[詳細的狀態欄位資訊的介紹](https://docs.mongodb.com/manual/reference/command/replSetGetStatus/#dbcmd.replSetGetStatus)。
+
+■ 將Secondary成員提升為Primary成員
+```shell
+#假設重新開啟一個cmd要重連mongo工具
+mongo --host rs0/localhost:27017,localhost:27018,localhost:27019
+cfg = rs.conf()
+#mongo工具是一個JavaScript的互動介面，透過rs.conf()取得目前的組態設定，並儲存在cfg變數
+
+cgf.members[0].priority= 0.5
+cgf.members[1].priority= 0.5
+cgf.members[2].priority= 1
+rs.reconfig(cfg)
+rs.status()
+```
