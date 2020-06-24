@@ -267,6 +267,8 @@ mongostat --host rs0/localhost:27017,localhost:27018,localhost:27019
 ```
 注意所有的設定操作只能在primary成員執行，如果發現目前的指令無法執行，則需要連線到primary的資料庫；[詳細的狀態欄位資訊的介紹](https://docs.mongodb.com/manual/reference/command/replSetGetStatus/#dbcmd.replSetGetStatus)。
 
+當發生[error in using rs.initiate() in mongo](https://stackoverflow.com/questions/41295767/error-in-using-rs-initiate-in-mongo/52971267)，就在連接primary的mongo的命令輸入`db.adminCommand( { shutdown : 1} )`然後再重新`rs.initiate()`就行了。
+
 ■ 將Secondary成員提升為Primary成員
 ```shell
 #假設重新開啟一個cmd要重連mongo工具
