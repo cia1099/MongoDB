@@ -13,6 +13,7 @@ Contents
 * [7. 索引與效能分析](#ch7)
 * [8. 聚合與管線](#ch8)
 * [9. 備份複製](#ch9)
+* [10. 實作會員系統的Web API](#ch10)
 
 
 ### 2.4 檢查與啟動MongoDB服務
@@ -282,3 +283,37 @@ cgf.members[2].priority= 1
 rs.reconfig(cfg)
 rs.status()
 ```
+<span id="ch10"></span>
+### 10. 實作會員系統的Web API
+
+<div align=center>表10.1 會員系統Web API</div>
+
+|HTTP URL|HTTP Method|指令說明|
+|---|---|---|
+http://localhost/api/member/|POST|發送資料，用POST請求通常會改變伺服器的某一筆資料或狀態
+http://localhost/api/member/|PUT|取代資料，用PUT請求通常將附帶的資料取代伺服器的某一筆資料
+http://localhost/api/member/<會員編號>|DELETE|用來請求伺服器刪除某一筆資料
+http://localhost/api/member/|GET|只用來取得數據
+
+HTTP連線就是用不同的要求(Request)方法來區分不同的回應(Response)動作，來控制服務端與客戶端之間的操作。
+
+<div align=center>表10.2 ASP.NET專案目錄</div>
+
+|資料夾|說明|
+|---|---|
+Properties|放屬性資訊的資料夾，如組態資訊(AssemblyInfo.cs)
+App_Data|放應用程式的資料夾，包含.mfd資料庫檔、XML檔案或其他類型的資料儲存檔案
+App_Start|放設定檔的資料夾，WebApiConfig.cs適用於Web API，它可設定Web-API-specific路由，及一個HTTP請求發送給Web服務器時，要將此HTTP請求轉交給某一個Controller處理。在Web API 2中，我們使用路由屬性(Route Attributes)來將某個HTTP請求轉交給某一個控制器。
+Controllers|放控制器的資料夾
+Models|放模型的資料夾
+
+<div align=center>表10.3 ASP.NET專案的檔案</div>
+
+|檔名|說明|
+|---|---|
+Global.asax|此檔案繼承了ASP.NET應用程式中所有應用程式物件通用方法、屬性和事件。在Web API專案的用途為根據WebApiComfig.cs的內容，設定ASP.NET應用程式參數，讓IIS知道如何使用Web API專案
+packages.config|設定專案所參考的套件清單。在切換不同電腦時，讓NuGet工具下載參考的套件清單，還原專案的相依性
+Web.config|用於切換Web API專案發行時，針對不同的版本進行相關參數設定。例如：發行除錯(Debug)版本時，設定MongoDB的連線字串為本地的資料庫；在發行線上版(Online)時，設定MongoDB的連線字串為線上服務的資料庫。
+
+在NuGet管理器下載完MongoDB.Driver之後，會更新專案中的`packages.config`檔案，使得未來專案在不同電腦上執行時，能夠自動下載套件，還原專案的相依性：[p.267]
+
