@@ -297,6 +297,8 @@ http://localhost/api/member/|GET|只用來取得數據
 
 HTTP連線就是用不同的要求(Request)方法來區分不同的回應(Response)動作，來控制服務端與客戶端之間的操作。
 
+![](./img/projectOfWebAPI.png)
+圖10.1 建立ASP.NET專案的文件
 <div align=center>表10.2 ASP.NET專案目錄</div>
 
 |資料夾|說明|
@@ -316,4 +318,7 @@ packages.config|設定專案所參考的套件清單。在切換不同電腦時�
 Web.config|用於切換Web API專案發行時，針對不同的版本進行相關參數設定。例如：發行除錯(Debug)版本時，設定MongoDB的連線字串為本地的資料庫；在發行線上版(Online)時，設定MongoDB的連線字串為線上服務的資料庫。
 
 在NuGet管理器下載完MongoDB.Driver之後，會更新專案中的`packages.config`檔案，使得未來專案在不同電腦上執行時，能夠自動下載套件，還原專案的相依性：[p.267]
+
+![](./img/changeDefaultPort.png)
+圖10.2 修改預設連接埠屬性，這裡修改完成後，我運行程式就無法連上這個網站
 

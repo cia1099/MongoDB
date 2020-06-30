@@ -222,7 +222,8 @@ namespace MSwebapi.Models
         {
             var response = Request.CreateResponse(HttpStatusCode.OK);
             response.StatusCode = HttpStatusCode.OK;
-            response.Content = new StringContent("Web API is running!");
+            //response.Content = new StringContent("Web API is running!");
+            response.Content = new StringContent($"{System.Configuration.ConfigurationManager.AppSettings["EnvInfo"]} Web API is running!");
             return response;
         }
     }
